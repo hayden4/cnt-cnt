@@ -1,0 +1,47 @@
+# Settings
+units real
+atom_style full
+boundary f f f
+processors * * *
+
+# Ineractions
+pair_style lj/class2 12.0
+pair_modify mix sixthpower
+
+dielectric 1.0
+special_bonds lj 0 0 1 coul 0 0 1
+bond_style class2
+
+# Atom Data
+read_data cnt.lammps
+
+# Groups
+group cnt1 molecule 1
+group cnt2 molecule 2
+
+# Remove self interactions
+neigh_modify exclude group cnt1 cnt1
+neigh_modify exclude group cnt2 cnt2
+
+# Increase neighbor list size
+neigh_modify once yes
+neigh_modify one 20000
+neigh_modify page 200000
+
+# Compute cnt1-cnt2 interaction
+compute 1 cnt1 group/group cnt2
+fix 1 all ave/time 1 1 1 c_1 file cnt_interaction_force.data
+
+# Dump atomistic data
+dump 1 all custom 1 "cnt.dump" id mol x y z fx fy fz
+
+# Reset timestep to 0
+reset_timestep 0
+
+# Thermo output
+thermo 1
+thermo_style custom step atoms etotal c_1
+thermo_modify lost warn flush yes
+
+# Run for one timestep to get interaction data
+run 1
